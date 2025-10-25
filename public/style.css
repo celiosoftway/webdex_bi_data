@@ -1,0 +1,81 @@
+/* public/style.css - Fixed to exactly 2 columns on large screens, 1 on small; added larger side margins via body padding; improved adjustment */
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+  margin: 0;
+  padding: 40px 60px; /* Larger side margins (60px left/right), top/bottom 40px */
+  transition: background-color 0.3s, color 0.3s;
+  box-sizing: border-box; /* Ensure padding doesn't add to width */
+}
+
+body.dark-mode {
+  background-color: #121212;
+  color: #ddd;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+#toggle-dark-mode {
+  padding: 10px;
+  cursor: pointer;
+}
+
+#charts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Exactly 2 columns on large screens */
+  gap: 20px; /* Space between charts */
+  width: 100%; /* Full container width */
+}
+
+.chart-container {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  transition: background-color 0.3s;
+  width: 100%; /* Full width within grid cell */
+  box-sizing: border-box; /* Include padding in width */
+  min-height: 300px; /* Minimum height to prevent collapse */
+}
+
+body.dark-mode .chart-container {
+  background-color: #1e1e1e;
+}
+
+/* Ensure no overflow/hidden on resize */
+canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Responsive: One column on smaller screens */
+@media (max-width: 1024px) {
+  #charts {
+    grid-template-columns: 1fr; /* Single column for medium/small screens */
+  }
+  
+  body {
+    padding: 20px 30px; /* Reduce side margins on smaller screens */
+  }
+}
+
+@media (max-width: 600px) {
+  header {
+    flex-direction: column;
+  }
+  
+  .chart-container {
+    padding: 10px;
+  }
+  
+  body {
+    padding: 10px 15px; /* Even smaller margins on mobile */
+  }
+}

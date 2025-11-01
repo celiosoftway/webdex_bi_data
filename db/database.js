@@ -63,6 +63,7 @@ const PeriodConsolidated = sequelize.define('PeriodConsolidated', {
     ]
 });
 
+
 const DailyData = sequelize.define('DailyData', {
     wallet: { type: DataTypes.STRING },
     data: { type: DataTypes.STRING }, // dd/mm/yyyy

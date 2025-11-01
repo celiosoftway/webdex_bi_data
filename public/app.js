@@ -22,15 +22,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderMonthlyBarChart(monthlyData) {
     console.log('Rendering Monthly Bar Chart with data:', monthlyData);
-    const ctx = createChartContainer('Lucro e Perda Mensal');
+    const ctx = createChartContainer('Período Mensal');
     const labels = monthlyData.map(d => d.periodIdentifier);
     new Chart(ctx, {
       type: 'bar',
       data: {
         labels,
         datasets: [
-          { label: 'Lucro Bruto', data: monthlyData.map(d => d.totalLucroBruto), backgroundColor: 'blue' },
-          { label: 'Perda Bruta', data: monthlyData.map(d => d.totalPerdaBruta), backgroundColor: 'red' }
+          { label: 'Ganhos', data: monthlyData.map(d => d.totalLucroBruto), backgroundColor: 'blue' },
+          { label: 'Perdas', data: monthlyData.map(d => d.totalPerdaBruta), backgroundColor: 'red' },
+          { label: 'Lucro', data: monthlyData.map(d => d.lucroDia), backgroundColor: 'green' }
         ]
       },
       options: {
@@ -45,16 +46,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderWeeklyLineChart(weeklyData) {
     console.log('Rendering Weekly Line Chart with data:', weeklyData);
-    const ctx = createChartContainer('Lucro e Perda Semanal');
+    const ctx = createChartContainer('Período Semanal');
     const labels = weeklyData.map(d => d.periodIdentifier);
     new Chart(ctx, {
       type: 'line',
       data: {
         labels,
         datasets: [
-          { label: 'Lucro Bruto', data: weeklyData.map(d => d.totalLucroBruto), borderColor: 'blue', fill: false },
-          { label: 'Perda Bruta', data: weeklyData.map(d => d.lucroDia), borderColor: 'green', fill: false },
-          { label: 'Perda Bruta', data: weeklyData.map(d => d.totalPerdaBruta), borderColor: 'red', fill: false }
+          { label: 'Ganhos', data: weeklyData.map(d => d.totalLucroBruto), borderColor: 'blue', fill: false },
+          { label: 'Lucro', data: weeklyData.map(d => d.lucroDia), borderColor: 'green', fill: false },
+          { label: 'Perdas', data: weeklyData.map(d => d.totalPerdaBruta), borderColor: 'red', fill: false }
         ]
       },
       options: { responsive: true }
@@ -64,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Weekly percentual evolution (line)
   function renderWeeklyPercentualChart(weeklyData) {
     console.log('Rendering Weekly Percentual Chart with data:', weeklyData);
-    const ctx = createChartContainer('Desempenho Semanal em Porcentagem');
+    const ctx = createChartContainer('Semanal "%"');
     const labels = weeklyData.map(d => d.periodIdentifier);
     new Chart(ctx, {
       type: 'line',
@@ -81,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderDailyLineChart(dailyData) {
     console.log('Rendering Weekly Percentual Chart with data:', dailyData);
-    const ctx = createChartContainer('Desempenho diário em Porcentagem');
+    const ctx = createChartContainer('Diário "%"');
     const labels = dailyData.map(d => d.data);
     new Chart(ctx, {
       type: 'line',
@@ -113,6 +114,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+
+
+  // lucro e capital
+  function renderWeeklyLineLucroCapital(dailyData) {
+    console.log('Rendering Capital Profit Chart with data:', dailyData);
+    const ctx = createChartContainer('Lucro total');
+    const labels = dailyData.map(d => d.data);
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          //  { label: 'Capital Total', data: dailyData.map(d => d.capital), borderColor: 'blue', fill: false },
+          { label: 'Lucro Total', data: dailyData.map(d => d.lucroTotal), borderColor: 'orange', fill: false },
+          { label: 'capital', data: dailyData.map(d => d.capital), borderColor: 'blue', fill: false }
+        ]
+      },
+      options: { responsive: true }
+    });
+  }
+
+
   // Auto-load all data on page load
   console.log('Starting auto-load of all data...');
   // Clear existing charts (though not necessary on load)
@@ -142,6 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderWeeklyPercentualChart(weeklyData);
     renderDailyLineChart(dailyData);
     renderCapitalProfitChart(dailyData);
+    renderWeeklyLineLucroCapital(dailyData);
 
   } catch (error) {
     console.error('Error loading data:', error);

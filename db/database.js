@@ -1,12 +1,27 @@
 // db.js - Separate file for database configuration and models
 
 const { Sequelize, DataTypes } = require('sequelize');
+require("dotenv").config();
 
 // Configuração do Sequelize
+
+/*
 const sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: './db/database.sqlite',
     logging: false,
+});
+*/
+
+// Configuração do Sequelize para MySQL
+const sequelize = new Sequelize({
+    dialect: 'mysql',
+    host: process.env.BD_HOST,          
+    port: 3306,                 
+    database: process.env.BD_BANCO,  
+    username: process.env.BD_USER,    
+    password: process.env.BD_SENHA,     
+    logging: false,            
 });
 
 // Definir modelos para o banco de dados
@@ -36,6 +51,8 @@ const Transaction = sequelize.define('Transaction', {
 
 const BlockTracker = sequelize.define('BlockTracker', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    carteira: { type: DataTypes.STRING },
+    token: { type: DataTypes.STRING },
     lastBlock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
 },
     { tableName: 'block_tracker', timestamps: true }

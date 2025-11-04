@@ -17,7 +17,7 @@ const { sequelize, Transaction, BlockTracker, PeriodConsolidated, DailyData } = 
 async function getTransactionsAPI(carteira, token, apiKey, blocoini) {
     console.log("⚙️ Executando getTransactionsAPI");
 
-    const { blocoProcessado, blocoAtual } = await getBlock();
+    const { blocoProcessado, blocoAtual } = await getBlock(carteira, token);
 
     try {
         const params = new URLSearchParams({
@@ -28,7 +28,7 @@ async function getTransactionsAPI(carteira, token, apiKey, blocoini) {
             contractaddress: token,
             sort: 'asc',
             apikey: apiKey,
-            startblock: blocoProcessado || 0,
+            startblock: blocoProcessado || blocoini || 0,
         });
 
         const url = `https://api.etherscan.io/v2/api?${params.toString()}`;
@@ -51,7 +51,7 @@ async function getTransactionsAPI(carteira, token, apiKey, blocoini) {
 async function geraTxBd(carteira, colateral) {
     console.log("⚙️ Executando formataTx");
     const resultado = [];
-    const { blocoProcessado, blocoAtual } = await getBlock();
+    const { blocoProcessado, blocoAtual } = await getBlock(carteira, colateral);
 
     try {
         const txs = await getTransactionsAPI(carteira, colateral, POLYGONSCAN_API_KEY);
@@ -122,7 +122,7 @@ async function geraTxBd(carteira, colateral) {
         }
 
         try {
-            await setLastProcessedBlock(blocoAtual - 1);
+            await setLastProcessedBlock(blocoAtual - 1, carteira, colateral);
         } catch (error) {
             console.error(error);
         }
@@ -187,7 +187,7 @@ async function decodeTransactionInput(txHash, provider1) {
         };
     } catch (error) {
         const methodId = ""; //(tx?.data || "").slice(0, 10);
-        console.warn(`Erro ao decodificar input: ${error.message} (${methodId})`);
+        console.warn(`Erro ao decodificar input: ${txHash} ${error.message} (${methodId} )`);
         return { functionName: "unknown", args: {}, methodId };
     }
 }
@@ -195,14 +195,14 @@ async function decodeTransactionInput(txHash, provider1) {
 // blocos
 // blocoAtual salva no banco
 // blocoProcessado, usa como parametro inicial no get
-async function getBlock(start) {
+async function getBlock(carteira, token, start) {
     const blocoAtual = await getCurrentBlockFromRPC(RPC_GLOBAL);
 
     if (!blocoAtual) {
         console.error(`⛔ Não foi possível obter o bloco atual para `);
     }
 
-    let blocoProcessado = await getLastProcessedBlock();
+    let blocoProcessado = await getLastProcessedBlock(carteira, token);
     if (!blocoProcessado || blocoProcessado === 0 || start) {
         console.log(`\n⛔ Não foi possível obter o ultimo bloco registrado do usuario`);
         blocoProcessado = 0;
@@ -221,13 +221,17 @@ async function getCurrentBlockFromRPC(rpc) {
 }
 
 // Função para obter o último bloco processado do DB
-async function getLastProcessedBlock() {
+async function getLastProcessedBlock(carteira, token) {
     const lastTx = await Transaction.findOne({
+        where: {
+            carteira: carteira,
+            token: token,
+        },
         order: [['blockNumber', 'DESC']],
     });
 
     const result = lastTx ? lastTx.blockNumber : 0;
-    console.log(`Ultimo bloco salvo ${result}`);
+    console.log(`Último bloco salvo para ${carteira} (${token}): ${result}`);
     return result;
 }
 
@@ -245,8 +249,8 @@ async function getAllTransactions() {
     }
 }
 
-async function setLastProcessedBlock(blockNumber) {
-    await BlockTracker.create({ lastBlock: blockNumber });
+async function setLastProcessedBlock(blockNumber, carteira, token) {
+    await BlockTracker.create({ carteira: carteira, token: token ,lastBlock: blockNumber,});
 }
 
 
@@ -804,4 +808,5 @@ module.exports = {
     geraTxBd,
     generateBIDATA,
     populateDailyData,
+    decodeTransactionInput,
 };

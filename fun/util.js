@@ -3,7 +3,8 @@ const ABI_DECODE_TX = [
   "function LiquidityAdd(string accountId,address strategyToken,address coin,uint256 amount)", // fallback possível
   "function LiquidityRemove(string[] accountId,address strategyToken,address coin,uint256 amount)",
   "function LiquidityRemove(string accountId,address strategyToken,address coin,uint256 amount)", // fallback
-  "function openPosition(address contractAddress,string accountId,address strategyToken,address user,int256 amount,(address,address)[] pairs,uint256 leverage,address referrer)"
+  "function openPosition(address contractAddress,string accountId,address strategyToken,address user,int256 amount,(address,address)[] pairs,uint256 leverage,address referrer)",
+  "function openPosition(address, string, address, address, int256, (address,address)[], uint256, address, string)"
 ];
 
 

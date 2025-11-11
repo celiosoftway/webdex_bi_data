@@ -24,6 +24,7 @@ const sequelize = new Sequelize({
     logging: false,            
 });
 
+
 // Definir modelos para o banco de dados
 const Transaction = sequelize.define('Transaction', {
     carteira: { type: DataTypes.STRING },
@@ -61,6 +62,7 @@ const BlockTracker = sequelize.define('BlockTracker', {
 // modelos para BI
 const PeriodConsolidated = sequelize.define('PeriodConsolidated', {
     wallet: { type: DataTypes.STRING },
+    token: { type: DataTypes.STRING },   
     periodType: { type: DataTypes.STRING },
     periodIdentifier: { type: DataTypes.STRING },
     startDate: { type: DataTypes.STRING },
@@ -83,7 +85,8 @@ const PeriodConsolidated = sequelize.define('PeriodConsolidated', {
 
 const DailyData = sequelize.define('DailyData', {
     wallet: { type: DataTypes.STRING },
-    data: { type: DataTypes.STRING }, // dd/mm/yyyy
+    token: { type: DataTypes.STRING }, 
+    data: { type: DataTypes.STRING }, 
     addRem: { type: DataTypes.FLOAT },
     lucroDia: { type: DataTypes.FLOAT },
     percentual: { type: DataTypes.FLOAT },
@@ -95,6 +98,48 @@ const DailyData = sequelize.define('DailyData', {
 }, {
     indexes: [
         { unique: true,fields: ['wallet', 'data'] }
+    ]
+});
+
+const DailyDataByAccount = sequelize.define('DailyDataByAccount', {
+    wallet: { type: DataTypes.STRING },
+    token: { type: DataTypes.STRING },
+    conta: { type: DataTypes.STRING },  // <-- accountId
+    data: { type: DataTypes.STRING },
+    addRem: { type: DataTypes.FLOAT },
+    lucroDia: { type: DataTypes.FLOAT },
+    percentual: { type: DataTypes.FLOAT },
+    operacoes: { type: DataTypes.INTEGER },
+    lucroBruto: { type: DataTypes.FLOAT },
+    perdaBruta: { type: DataTypes.FLOAT },
+    lucroTotal: { type: DataTypes.FLOAT },
+    capital: { type: DataTypes.FLOAT },
+}, {
+    indexes: [
+        { unique: true, fields: ['wallet', 'token', 'conta', 'data'] }
+    ]
+});
+
+const PeriodConsolidatedByAccount = sequelize.define('PeriodConsolidatedByAccount', {
+    wallet: { type: DataTypes.STRING },
+    token: { type: DataTypes.STRING },
+    conta: { type: DataTypes.STRING },  // <-- accountId
+    periodType: { type: DataTypes.STRING },
+    periodIdentifier: { type: DataTypes.STRING },
+    startDate: { type: DataTypes.STRING },
+    endDate: { type: DataTypes.STRING },
+    addRem: { type: DataTypes.FLOAT },
+    lucroDia: { type: DataTypes.FLOAT },
+    lucroTotal: { type: DataTypes.FLOAT },
+    capitalInicial: { type: DataTypes.FLOAT },
+    capitalFinal: { type: DataTypes.FLOAT },
+    percentual: { type: DataTypes.FLOAT },
+    totalOperacoes: { type: DataTypes.INTEGER },
+    totalLucroBruto: { type: DataTypes.FLOAT },
+    totalPerdaBruta: { type: DataTypes.FLOAT },
+}, {
+    indexes: [
+        { unique: true, fields: ['wallet', 'token', 'conta', 'periodType', 'periodIdentifier'] }
     ]
 });
 
@@ -113,5 +158,7 @@ module.exports = {
     Transaction,
     BlockTracker,
     PeriodConsolidated,
-    DailyData
+    DailyData,
+    DailyDataByAccount,
+    PeriodConsolidatedByAccount
 };

@@ -1,4 +1,4 @@
-// public/app.js - Kept as is, with auto-load and logs; structure allows easy addition of new render functions
+// public/app.js 
 
 document.addEventListener('DOMContentLoaded', async () => {
   const chartsSection = document.getElementById('charts');
@@ -136,6 +136,70 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
 
+  // Pie chart: Percentual por conta
+  function renderPercentualPorContaChart(data) {
+    const ctx = createChartContainer('Percentual por Conta');
+    const labels = data.map(d => d.conta);
+    const values = data.map(d => parseFloat(d.percentualTotal).toFixed(2));
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Percentual (%)',
+          data: values,
+          backgroundColor: [
+            '#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', '#00BCD4'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'right' },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.label}: ${ctx.parsed}%`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Pie chart: Lucro total por conta
+  function renderLucroPorContaChart(data) {
+    const ctx = createChartContainer('Lucro Total por Conta');
+    const labels = data.map(d => d.conta);
+    const values = data.map(d => parseFloat(d.lucroTotal).toFixed(2));
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Lucro Total',
+          data: values,
+          backgroundColor: [
+            '#FF5722', '#3F51B5', '#8BC34A', '#FFC107', '#009688', '#9E9E9E'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'right' },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.label}: $${ctx.parsed}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+
+
   // Auto-load all data on page load
   console.log('Starting auto-load of all data...');
   // Clear existing charts (though not necessary on load)
@@ -160,12 +224,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dailyData = await dailyResponse.json();
     console.log('Daily data received:', dailyData);
 
+    // Get account summary data
+    console.log('Fetching account summary...');
+    const accountSummaryResponse = await fetch('/api/accounts-summary');
+    const accountSummaryData = await accountSummaryResponse.json();
+    console.log('Account summary received:', accountSummaryData);
+
     renderMonthlyBarChart(monthlyData);
     renderWeeklyLineChart(weeklyData);
     renderWeeklyPercentualChart(weeklyData);
     renderDailyLineChart(dailyData);
     renderCapitalProfitChart(dailyData);
     renderWeeklyLineLucroCapital(dailyData);
+    renderPercentualPorContaChart(accountSummaryData);
+    renderLucroPorContaChart(accountSummaryData);
 
   } catch (error) {
     console.error('Error loading data:', error);

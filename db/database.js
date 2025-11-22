@@ -78,7 +78,9 @@ const PeriodConsolidated = sequelize.define('PeriodConsolidated', {
     totalPerdaBruta: { type: DataTypes.FLOAT },
 }, {
     indexes: [
-        { unique: true, fields: ['wallet', 'periodType', 'periodIdentifier'] }
+        { unique: true, 
+          fields: ['wallet', 'periodType', 'periodIdentifier'],
+          name: 'uniq_periodConsolidated' }
     ]
 });
 
@@ -97,7 +99,9 @@ const DailyData = sequelize.define('DailyData', {
     capital: { type: DataTypes.FLOAT },
 }, {
     indexes: [
-        { unique: true,fields: ['wallet', 'data'] }
+        { unique: true,
+          fields: ['wallet', 'data'], 
+          name: 'uniq_DailyData'  }
     ]
 });
 
@@ -116,7 +120,9 @@ const DailyDataByAccount = sequelize.define('DailyDataByAccount', {
     capital: { type: DataTypes.FLOAT },
 }, {
     indexes: [
-        { unique: true, fields: ['wallet', 'token', 'conta', 'data'] }
+        { unique: true, 
+          fields: ['wallet', 'token', 'conta', 'data'],
+          name: 'uniq_acc_daily_period'  }
     ]
 });
 
@@ -139,7 +145,9 @@ const PeriodConsolidatedByAccount = sequelize.define('PeriodConsolidatedByAccoun
     totalPerdaBruta: { type: DataTypes.FLOAT },
 }, {
     indexes: [
-        { unique: true, fields: ['wallet', 'token', 'conta', 'periodType', 'periodIdentifier'] }
+        { unique: true, 
+          fields: ['wallet', 'token', 'conta', 'periodType', 'periodIdentifier'],
+          name: 'uniq_acc_period' }   
     ]
 });
 

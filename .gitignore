@@ -1,3 +1,4 @@
 db/database.sqlite
 .env
 node_modules
+discloud

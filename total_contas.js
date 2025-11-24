@@ -1,11 +1,17 @@
 require("dotenv").config();
 const axios = require('axios');
 const ethers = require('ethers');
+const fs = require('fs').promises;
+const path = require('path');
 
 const RPC_GLOBAL = process.env.RPC_GLOBAL;
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY;
 const provider = new ethers.JsonRpcProvider(RPC_GLOBAL);
 const TOKEN_COLATERAL_ADDRESS_V5 = process.env.TOKEN_COLATERAL_ADDRESS_V5
+const FILE_PATH = path.resolve('./data/unique_holders_24h.json');
+
+// Blocos por hora na Polygon ≈ 1714 (2.1s médio)
+const BLOCKS_24H = 1714 * 12;
 
 const ABI_DECODE_TX = [
     "function LiquidityAdd(string[] accountId,address strategyToken,address coin,uint256 amount)",
@@ -16,11 +22,22 @@ const ABI_DECODE_TX = [
     "function openPosition(address, string, address, address, int256, (address,address)[], uint256, address, string)"
 ];
 
-// Função para buscar transações novas via API
-async function getTransactionsAPI() {
-    console.log("⚙️ Executando getTransactionsAPI");
-
+/**
+ * Função principal – agora com:
+ * 1. Bloco inicial calculado dinamicamente (-24h)
+ * 2. Salvamento automático em JSON (pra seu cron diário)
+ * 3. Retorna o número de contas únicas pra usar na estimativa de tempo
+ */
+async function getUniqueHoldersLast24h() {
     try {
+        // 1. Pegar bloco atual e calcular o inicial (-24h)
+        const endBlock = await provider.getBlockNumber();
+        const startBlock = endBlock - BLOCKS_24H;
+
+        console.log(`🟢 Monitorando últimas ~24h`);
+        console.log(`   Bloco atual: ${endBlock}`);
+        console.log(`   Bloco inicial (≈24h atrás): ${startBlock}`);
+
         const params = new URLSearchParams({
             chainid: '137',
             module: 'account',
@@ -28,56 +45,70 @@ async function getTransactionsAPI() {
             contractaddress: TOKEN_COLATERAL_ADDRESS_V5,
             sort: 'asc',
             apikey: POLYGONSCAN_API_KEY,
-            startblock: 79313392,
+            startblock: startBlock,
+            endblock: endBlock
         });
 
-        const url = `https://api.etherscan.io/v2/api?${params.toString()}`; // Se for Polygon, teste com api.polygonscan.com
+        const url = `https://api.etherscan.io/v2/api?${params.toString()}`;
         const response = await axios.get(url);
         const data = response.data;
 
-        if (!data.result || !Array.isArray(data.result)) {
-            throw new Error("Erro ao obter transações.");
+        if (data.status !== "1" || !Array.isArray(data.result)) {
+            throw new Error(`Polygonscan error: ${data.message || data.result}`);
         }
-
-        let setContas = new Set();
-        let repetidos = 0;
-        let unicos = 0;
-        let i = 0;
 
         const txs = data.result;
+        console.log(`📡 ${txs.length} transações encontradas nas últimas 24h`);
 
-        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const uniqueAccounts = new Set();
+        let decodedCount = 0;
+
+        const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
         for (const tx of txs) {
-            const txHash = tx.hash;
+            try {
+                const txHash = tx.hash;
+                const decoded = await decodeTransactionInput(txHash, provider);
+                const accountId = decoded?.args?.accountId?.[0];
 
-            // Assumindo que decodeTransactionInput é async; se não for, remova o await
-            const dadosTx = await decodeTransactionInput(txHash, provider);
-            const conta = dadosTx?.args?.accountId?.[0] || 'unknown';
+                if (accountId && accountId !== 'unknown') {
+                    uniqueAccounts.add(accountId.toLowerCase()); // evita case-sensitive
+                    decodedCount++;
+                }
 
-            if (setContas.has(conta)) {
-                repetidos += 1;
-            } else {
-                setContas.add(conta);
-                unicos += 1;
+                // Log a cada 50 txs pra você sentir o cyber-pulse
+                if (decodedCount % 50 === 0 && decodedCount > 0) {
+                    console.log(`⚡ Decodificados: ${decodedCount} | Contas únicas até agora: ${uniqueAccounts.size}`);
+                }
+
+                await delay(180); // respeitando rate limit (~5 req/s)
+            } catch (err) {
+                // uma tx falhar não mata o batch todo
+                continue;
             }
-
-            if (i === 10) {
-                console.log(`unicos: ${unicos}, repetidos: ${repetidos}`);
-                i = 0;
-            }
-
-            i += 1;
-
-            // Delay aqui pra dar um respiro pro provider – ajuste o ms se precisar
-            await delay(200);
         }
 
-        console.log(`Finalizado\n\nunicos: ${unicos}, repetidos: ${repetidos}`);
+        const result = {
+            timestamp: new Date().toISOString(),
+            startBlock,
+            endBlock,
+            totalTransactions: txs.length,
+            successfullyDecoded: decodedCount,
+            uniqueHolders: uniqueAccounts.size,
+            holdersList: Array.from(uniqueAccounts), // opcional: salva a lista completa
+        };
+
+        // 2. Salva em JSON lindo pra seu cron diário
+        await fs.mkdir(path.dirname(FILE_PATH), { recursive: true });
+        await fs.writeFile(FILE_PATH, JSON.stringify(result, null, 2));
+        console.log(`💾 Dados salvos em ${FILE_PATH}`);
+        console.log(`🎉 Holders únicos nas últimas 24h: ${result.uniqueHolders}`);
+
+        return result.uniqueHolders; // ← valor que você vai usar na estimativa!
 
     } catch (error) {
-        console.error("Erro em getTransactionsAPI:", error);
-        return [];
+        console.error("💥 Erro crítico em getUniqueHoldersLast24h:", error.message);
+        return 0;
     }
 }
 
@@ -177,8 +208,6 @@ async function getProtocolSpeed(totalAccounts) {
     const response = await axios.get(url);
     const data = response.data;
 
-    console.log(url)
-
     if (!data.result || !Array.isArray(data.result)) {
         throw new Error("Erro ao obter transações.");
     }
@@ -239,8 +268,15 @@ function formatProtocolSpeed(result, totalAccounts) {
 
 
 (async () => {
+
+   // await getUniqueHoldersLast24h();
+
+    const data = await fs.readFile(FILE_PATH, 'utf-8');
+    const json = JSON.parse(data);
+    console.log(json.uniqueHolders)
+
     // 1) obter número total de contas
-    const total = 1864; // await Account.count(); // vindo da FUNÇÃO 1
+    const total = json.uniqueHolders || 1864;
 
     // 2) medir velocidade do protocolo
     const speed = await getProtocolSpeed(total);
